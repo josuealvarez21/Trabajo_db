@@ -1,7 +1,7 @@
 # Importación de librerías requeridas
 import pandas as pd  # Manipulación y análisis de datos mediante DataFrames
 import glob       # Búsqueda de patrones de nombres de archivos en el sistema
-
+import matplotlib.pyplot as plt
 # 1. Buscar datos y leer archivos específicos
 # Carga de datos desde un archivo con formato CSV (Sucursal Medellín)
 df_medellin = pd.read_csv("sucursal_medellin.csv")
@@ -16,12 +16,12 @@ df_bogota = pd.read_excel("sucursal_bogota.xlsx")
 # print(df_bogota.colomns)
 
 
-# Obtiene la lista de todos los archivos con extensión .csv en la carpeta actual
-archivo_csv = glob.glob("*.csv")
+# Obtiene la lista de los archivos de sucursales (.csv) en la carpeta actual
+archivo_csv = glob.glob("sucursal_*.csv")
 print(f"Archivos encontrados: {archivo_csv}")
 
-# Obtiene la lista de todos los archivos con extensión .xlsx en la carpeta actual
-archivo_excel = glob.glob("*.xlsx")
+# Obtiene la lista de los archivos de sucursales (.xlsx) en la carpeta actual
+archivo_excel = glob.glob("sucursal_*.xlsx")
 print(f"Archivos encontrados: {archivo_excel}")
 
 
@@ -72,5 +72,41 @@ print(lista_dataframes[i])
 
 
 df_consolidado = pd.concat(lista_dataframes, ignore_index=True)  # Combina todos los DataFrames en uno solo
+
 df_consolidado.to_excel("reporte_semi_ordenado.xlsx", index=False)
+
+# 6a. EJEMPLO RESUELTO: ventas por categoría (gráfico de barras)
+ventas_por_categoria = df_consolidado.groupby('categoria')['precio_unitario'].sum()  # Agrupa y suma por categoría
+ventas_por_categoria.plot(kind='bar', title='Ventas por Categoria')  # Crea el gráfico de barras
+plt.ticklabel_format(style='plain', axis='y')  # Evita notación científica (1e6)
+plt.ylabel('Ventas totales ($)')
+plt.xlabel('Categoría')
+plt.xticks(rotation=0)
+plt.tight_layout()
+plt.savefig("grafico_ventas_categoria.png")
+plt.show()
+
+# 6b. EJEMPLO RESUELTO: participación por vendedor (gráfico de torta)
+ventas_por_vendedor = df_consolidado.groupby('vendedor')['precio_unitario'].sum()  # Agrupa y suma por vendedor
+ventas_por_vendedor.plot(kind='pie', autopct='%1.1f%%', title='Participacion de Ventas por Vendedor')  # Grafico de torta con porcentajes
+plt.ylabel('')  # No aplica en gráficos de torta
+plt.tight_layout()
+plt.savefig("grafico_ventas_vendedor.png")
+plt.show()
+
+# 6c. AHORA USTEDES: ¿cuál es el producto que aparece más veces 
+# en las ventas? Investiguen la función value_counts() y 
+# apliquenla a la columna 'producto'
+frecuencia_productos = df_consolidado['producto'].value_counts()
+print("Frecuencia de productos vendidos:")
+print(frecuencia_productos)
+print(f"El producto que mas aparece es: {frecuencia_productos.idxmax()}")
+
+
+#rta// el producto que mas aparece es electronica 
+
+"""La función value_counts() (utilizada principalmente en la librería pandas 
+de Python) sirve para contar cuántas 
+veces aparece cada valor único dentro de una columna o serie de datos."""
+
 
