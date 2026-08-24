@@ -78,3 +78,12 @@ plt.ylabel('')
 plt.tight_layout()
 plt.savefig(os.path.join(CARPETA_RESULTADOS, "grafico_vendedor.png"))
 plt.show()
+
+# 6c. Producto que más aparece en las ventas (value_counts)
+frecuencia_productos = df_consolidado['producto'].value_counts()
+print("Frecuencia de productos vendidos:")
+print(frecuencia_productos)
+print(f"El producto que más aparece es: {frecuencia_productos.idxmax()}")
+
+"""La función value_counts() sirve para contar cuántas veces
+aparece cada valor único dentro de una columna o serie de datos."""
