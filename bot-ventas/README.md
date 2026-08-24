@@ -98,7 +98,7 @@ Tras la limpieza, todas las tablas comparten el mismo esquema:
 | `metodo_pago` | texto | Medio de pago utilizado |
 | `categoria` | texto | Categoría del producto |
 
-> **Nota**: El archivo de Barranquilla originalmente usaba nombres distintos (`Fecha_Venta`, `Cant`, `Valor_Unitario`, `Pago`). El bot lo detecta mediante la columna única `Fecha_Venta` y renombra sus columnas con un diccionario antes de consolidar.
+> **Nota**: El archivo de **Bogotá** originalmente usaba nombres distintos (`Fecha_Venta`, `Producto`, `Categoria`, `Cant`, `Valor_Unitario`, `Vendedor`, `Pago`). El bot lo detecta mediante la columna única `Fecha_Venta` y renombra sus columnas con un diccionario antes de consolidar.
 
 ---
 
@@ -127,6 +127,60 @@ Tras la limpieza, todas las tablas comparten el mismo esquema:
 
 - **Gráfico de barras**: Compara el total de ventas ($) entre categorías de productos.
 - **Gráfico de torta**: Muestra qué porcentaje del total vendido aporta cada vendedor al equipo.
+
+### Ventas por categoría
+
+![Ventas por Categoría](resultados/grafico_categoria.png)
+
+### Participación de ventas por vendedor
+
+![Participación por Vendedor](resultados/grafico_vendedor.png)
+
+---
+
+## 📈 Resultados Obtenidos
+
+Al ejecutar el bot sobre los datos de las 4 sucursales se obtienen los siguientes resultados reales:
+
+### Resumen general
+
+| Métrica | Valor |
+|---------|-------|
+| Registros consolidados | **66 ventas** (Medellín 18 · Cali 17 · Barranquilla 16 · Bogotá 15) |
+| Ventas totales | **$6,037,900** |
+| Unidades vendidas | 294 |
+| Productos únicos | 10 |
+
+### Ventas por categoría
+
+| Categoría | Ventas ($) | Participación |
+|-----------|-----------:|--------------:|
+| Electrónica | $3,412,700 | 56.5% |
+| Ropa | $2,625,200 | 43.5% |
+
+### Participación por vendedor
+
+| Vendedor | Ventas ($) | Participación |
+|----------|-----------:|--------------:|
+| Camila Ruiz | $1,935,800 | 33.1% |
+| Andres Gomez | $1,361,700 | 23.3% |
+| Sofia Mena | $1,322,300 | 22.6% |
+| Felipe Torres | $651,200 | 11.1% |
+| Laura Diaz | $580,200 | 9.9% |
+
+### Producto más vendido (`value_counts()`)
+
+El producto que **más aparece** en las ventas es el **Jean clásico**, con **11 apariciones** en el consolidado:
+
+| # | Producto | Apariciones |
+|---|----------|------------:|
+| 1 | Jean clasico | 11 |
+| 2 | Cargador USB-C | 10 |
+| 3 | Camiseta basica | 9 |
+| 4 | Medias deportivas | 7 |
+| 5 | Audifonos Bluetooth | 6 |
+
+> 💡 **Hallazgo clave**: aunque Electrónica es la categoría que más dinero genera ($3.4M, 56.5%), el producto más frecuente pertenece a Ropa (Jean clasico), lo que sugiere que las prendas se venden en mayor volumen pero con precios unitarios más bajos.
 
 ---
 
