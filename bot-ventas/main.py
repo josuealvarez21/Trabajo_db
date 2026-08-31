@@ -1,89 +1,118 @@
-# Importación de librerías requeridas
-import pandas as pd  # Manipulación y análisis de datos mediante DataFrames
-import glob          # Búsqueda de patrones de nombres de archivos
-import os            # Manejo de rutas
+# ============================================
+# AUTOMATIZACION - Bot de Ventas
+# Vigila la carpeta de datos y procesa automaticamente
+# los archivos nuevos: consolida, limpia, genera graficos y registro.
+# ============================================
+import time
+import os
+import pandas as pd
+import glob
 import matplotlib.pyplot as plt
 
-# Rutas base del proyecto
 CARPETA_DATOS = "datos"
 CARPETA_RESULTADOS = "resultados"
 
 os.makedirs(CARPETA_RESULTADOS, exist_ok=True)
 
-# 1. Buscar datos y leer archivos específicos
-df_medellin = pd.read_csv(os.path.join(CARPETA_DATOS, "sucursal_medellin.csv"))
-print(df_medellin.head())
+archivos_vistos = set(os.listdir(CARPETA_DATOS))
 
-df_bogota = pd.read_excel(os.path.join(CARPETA_DATOS, "sucursal_bogota.xlsx"))
-print(df_bogota.head())
 
-# Obtiene la lista de archivos de sucursales (.csv) en la carpeta datos/
-archivo_csv = glob.glob(os.path.join(CARPETA_DATOS, "sucursal_*.csv"))
-print(f"Archivos encontrados: {archivo_csv}")
+def procesar_todo(archivo_nuevo):
+    """
+    Lee todos los archivos de sucursales, consolida, limpia,
+    genera graficos y guarda un registro (log) del proceso.
+    """
+    archivos_csv = glob.glob(os.path.join(CARPETA_DATOS, "sucursal_*.csv"))
+    archivos_xlsx = glob.glob(os.path.join(CARPETA_DATOS, "sucursal_*.xlsx"))
+    lista_informes = []
 
-# Obtiene la lista de archivos de sucursales (.xlsx) en la carpeta datos/
-archivo_excel = glob.glob(os.path.join(CARPETA_DATOS, "sucursal_*.xlsx"))
-print(f"Archivos encontrados: {archivo_excel}")
+    for archivo in archivos_csv:
+        try:
+            lista_informes.append(pd.read_csv(archivo))
+        except Exception as e:
+            print(f"Error leyendo {archivo}: {e}")
 
-# 2. Carga masiva de archivos y almacenamiento en una lista
-lista_dataframes = []
+    for archivo in archivos_xlsx:
+        try:
+            lista_informes.append(pd.read_excel(archivo, engine='openpyxl'))
+        except Exception as e:
+            print(f"Error leyendo {archivo}: {e}")
 
-for archivo in archivo_csv:
-    df = pd.read_csv(archivo)
-    lista_dataframes.append(df)
-    print(f"Leído: {archivo} - {len(df)} filas")
+    if not lista_informes:
+        print("No se encontraron archivos para procesar.")
+        return
 
-for archivo in archivo_excel:
-    df = pd.read_excel(archivo)
-    lista_dataframes.append(df)
-    print(f"Leído: {archivo} - {len(df)} filas")
+    for i, df in enumerate(lista_informes):
+        if 'Fecha_Venta' in df.columns:
+            lista_informes[i] = df.rename(columns={
+                "Fecha_Venta": "fecha",
+                "Cant": "cantidad",
+                "Producto": "producto",
+                "Valor_Unitario": "precio_unitario",
+                "Vendedor": "vendedor",
+                "Pago": "metodo_pago",
+                "Categoria": "categoria"
+            })
 
-# 3. Limpieza: uno de los 4 archivos tiene columnas con nombres distintos.
-# Se detecta por la columna única 'Fecha_Venta' y se renombra todo su esquema.
-for i, df in enumerate(lista_dataframes):
-    if 'Fecha_Venta' in df.columns:
-        lista_dataframes[i] = df.rename(columns={
-            "Fecha_Venta": "fecha",
-            "Cant": "cantidad",
-            "Producto": "producto",
-            "Valor_Unitario": "precio_unitario",
-            "Vendedor": "vendedor",
-            "Pago": "metodo_pago",
-            "Categoria": "categoria"
-        })
+    df_consolidado = pd.concat(lista_informes, ignore_index=True)
+    df_consolidado = df_consolidado.drop_duplicates()
 
-# 4. Consolidación de todos los DataFrames en uno solo
-df_consolidado = pd.concat(lista_dataframes, ignore_index=True)
+    ruta_excel = os.path.join(CARPETA_RESULTADOS, "consolidado_limpio.xlsx")
+    df_consolidado.to_excel(ruta_excel, index=False)
 
-# 5. Exportar el consolidado limpio a resultados/
-ruta_salida = os.path.join(CARPETA_RESULTADOS, "consolidado_limpio.xlsx")
-df_consolidado.to_excel(ruta_salida, index=False)
-print(f"Consolidado guardado en: {ruta_salida}")
+    ventas_categoria = df_consolidado.groupby('categoria')['precio_unitario'].sum()
+    ventas_categoria.plot(kind='bar', title='Ventas por Categoria')
+    plt.ticklabel_format(style='plain', axis='y')
+    plt.ylabel('Ventas totales (COP)')
+    plt.xlabel('Categoria')
+    plt.xticks(rotation=0)
+    plt.tight_layout()
+    plt.savefig(os.path.join(CARPETA_RESULTADOS, "grafico_categoria.png"))
+    plt.close()
 
-# 6a. Ventas por categoría (gráfico de barras)
-ventas_por_categoria = df_consolidado.groupby('categoria')['precio_unitario'].sum()
-ventas_por_categoria.plot(kind='bar', title='Ventas por Categoría')
-plt.ticklabel_format(style='plain', axis='y')
-plt.ylabel('Ventas totales ($)')
-plt.xlabel('Categoría')
-plt.xticks(rotation=0)
-plt.tight_layout()
-plt.savefig(os.path.join(CARPETA_RESULTADOS, "grafico_categoria.png"))
-plt.show()
+    ventas_vendedor = df_consolidado.groupby('vendedor')['precio_unitario'].sum()
+    ventas_vendedor.plot(kind='pie', autopct='%1.1f%%', title='Participacion por Vendedor')
+    plt.ylabel('')
+    plt.tight_layout()
+    plt.savefig(os.path.join(CARPETA_RESULTADOS, "grafico_vendedor.png"))
+    plt.close()
 
-# 6b. Participación por vendedor (gráfico de torta)
-ventas_por_vendedor = df_consolidado.groupby('vendedor')['precio_unitario'].sum()
-ventas_por_vendedor.plot(kind='pie', autopct='%1.1f%%', title='Participación de Ventas por Vendedor')
-plt.ylabel('')
-plt.tight_layout()
-plt.savefig(os.path.join(CARPETA_RESULTADOS, "grafico_vendedor.png"))
-plt.show()
+    frecuencia = df_consolidado['producto'].value_counts()
+    producto_top = frecuencia.idxmax()
+    total_ventas = df_consolidado['precio_unitario'].sum()
 
-# 6c. Producto que más aparece en las ventas (value_counts)
-frecuencia_productos = df_consolidado['producto'].value_counts()
-print("Frecuencia de productos vendidos:")
-print(frecuencia_productos)
-print(f"El producto que más aparece es: {frecuencia_productos.idxmax()}")
+    with open(os.path.join(CARPETA_RESULTADOS, "log_automatizacion.txt"), "a", encoding="utf-8") as f:
+        f.write(f"Proceso ejecutado: {pd.Timestamp.now()}\n")
+        f.write(f"Archivo detectado: {archivo_nuevo}\n")
+        f.write(f"Total de registros procesados: {len(df_consolidado)}\n")
+        f.write(f"Ventas totales: ${total_ventas:,.0f}\n")
+        f.write(f"Producto mas vendido: {producto_top}\n")
+        f.write("---\n")
 
-"""La función value_counts() sirve para contar cuántas veces
-aparece cada valor único dentro de una columna o serie de datos."""
+    print(f"  Registros consolidados: {len(df_consolidado)}")
+    print(f"  Ventas totales: ${total_ventas:,.0f}")
+    print(f"  Producto mas frecuente: {producto_top}")
+    print("  Archivos actualizados en resultados/")
+
+
+print("=" * 50)
+print("  BOT DE VENTAS - MODO AUTOMATIZADO")
+print("=" * 50)
+print(f"Monitoreando carpeta '{CARPETA_DATOS}/'... (Ctrl+C para detener)")
+print()
+
+try:
+    while True:
+        archivos_actuales = set(os.listdir(CARPETA_DATOS))
+        archivos_nuevos = archivos_actuales - archivos_vistos
+
+        if archivos_nuevos:
+            for archivo in archivos_nuevos:
+                print(f"[+] Nuevo archivo detectado: {archivo}")
+                procesar_todo(archivo)
+                print()
+            archivos_vistos = archivos_actuales
+
+        time.sleep(5)
+except KeyboardInterrupt:
+    print("\nMonitoreo detenido por el usuario.")

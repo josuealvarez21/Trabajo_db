@@ -1,0 +1,11 @@
+fecha,producto,categoria,cantidad,precio_unitario,vendedor,metodo_pago
+2026-08-02,Teclado mecanico,Electronica,2,142300.0,Camila Ruiz,Efectivo
+2026-08-04,Jean clasico,Ropa,5,103400.0,Andres Gomez,Tarjeta
+2026-08-06,Audifonos Bluetooth,Electronica,1,167200.0,Sofia Mena,Transferencia
+2026-08-08,Camiseta basica,Ropa,3,56100.0,Laura Diaz,Efectivo
+2026-08-09,Parlante portatil,Electronica,4,98700.0,Felipe Torres,Tarjeta
+2026-08-11,Chaqueta impermeable,Ropa,2,145600.0,Camila Ruiz,Efectivo
+2026-08-13,Mouse inalambrico,Electronica,6,73800.0,Andres Gomez,Tarjeta
+2026-08-15,Cargador USB-C,Electronica,3,112500.0,Sofia Mena,Transferencia
+2026-08-17,Medias deportivas,Ropa,4,28900.0,Laura Diaz,Efectivo
+2026-08-19,Gorra deportiva,Ropa,1,74300.0,Felipe Torres,Efectivo

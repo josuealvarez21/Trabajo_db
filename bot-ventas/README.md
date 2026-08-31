@@ -1,48 +1,158 @@
-# Bot de Ventas 🤖📊
+# Bot de Ventas
 
-Bot de análisis de ventas desarrollado en Python que consolida automáticamente los datos de ventas de **4 sucursales** (Medellín, Bogotá, Cali y Barranquilla), limpia y unifica la información, genera reportes en Excel y gráficos estadísticos.
+Bot de analisis de ventas desarrollado en Python con **sistema de automatizacion** que vigila la carpeta de datos y procesa automaticamente los reportes nuevos que van llegando.
 
 ---
 
-## 📁 Estructura del Proyecto
+## Estructura del Proyecto
 
 ```
 bot-ventas/
-├── datos/
-│   ├── sucursal_medellin.csv        # Datos CSV - Sucursal Medellín
-│   ├── sucursal_bogota.xlsx         # Datos Excel - Sucursal Bogotá
-│   ├── sucursal_cali.csv            # Datos CSV - Sucursal Cali
-│   └── sucursal_barranquilla.xlsx   # Datos Excel - Sucursal Barranquilla
-├── resultados/
-│   ├── consolidado_limpio.xlsx      # Reporte final consolidado y limpio
-│   ├── grafico_categoria.png        # Gráfico de barras: ventas por categoría
-│   └── grafico_vendedor.png         # Gráfico de torta: participación por vendedor
-├── main.py                          # Script principal del bot
-└── README.md                        # Este archivo
+├── datos/                          # Carpeta vigilada (aqui se colocan los reportes)
+│   ├── sucursal_medellin.csv       # Datos CSV - Sucursal Medellin
+│   ├── sucursal_bogota.xlsx        # Datos Excel - Sucursal Bogota
+│   ├── sucursal_cali.csv           # Datos CSV - Sucursal Cali
+│   └── sucursal_barranquilla.xlsx  # Datos Excel - Sucursal Barranquilla
+├── resultados/                     # Salidas generadas
+│   ├── consolidado_limpio.xlsx     # Reporte final consolidado y limpio
+│   ├── grafico_categoria.png       # Grafico de barras: ventas por categoria
+│   ├── grafico_vendedor.png        # Grafico de torta: participacion por vendedor
+│   └── log_automatizacion.txt      # Registro de cada proceso automatizado
+├── prueba/                         # Archivos de prueba para la demo
+│   ├── sucursal_medellin_reporte2.csv
+│   └── sucursal_cali_reporte2.csv
+├── main.py                         # Script principal (vigilancia + proceso)
+├── requirements.txt                # Dependencias del proyecto
+└── README.md                       # Este archivo
 ```
 
 ---
 
-## 📋 Descripción General
+## Descripcion General
 
-Este proyecto resuelve el problema típico de tener información de ventas **dispersa en múltiples archivos con formatos distintos** (CSV y Excel) e incluso con **nombres de columnas diferentes** entre archivos. El bot automatiza todo el flujo de trabajo:
-
-1. **Descubrimiento de archivos**: Busca automáticamente todos los archivos `sucursal_*.csv` y `sucursal_*.xlsx` dentro de la carpeta `datos/`.
-2. **Carga masiva**: Lee cada archivo con la función adecuada según su formato (`pd.read_csv` o `pd.read_excel`) y lo almacena como DataFrame en una lista.
-3. **Limpieza y estandarización**: Detecta el archivo con columnas renombradas (uno de los 4 usa nombres distintos) y aplica un diccionario de renombrado para unificar todos los esquemas.
-4. **Consolidación**: Une todos los DataFrames en uno solo con `pd.concat()`.
-5. **Generación de reportes**: Exporta el consolidado limpio a `resultados/consolidado_limpio.xlsx`.
-6. **Análisis visual**: Genera gráficos estadísticos y los guarda como imágenes PNG en `resultados/`.
+El proyecto resuelve el problema de tener la informacion de ventas **dispersa en multiples archivos con formatos distintos** (CSV y Excel) e incluso con **nombres de columnas diferentes** entre archivos. El bot automatiza todo el flujo de trabajo y, con el nuevo sistema de automatizacion, ya no es necesario ejecutar nada manualmente: basta con dejar caer un reporte nuevo en la carpeta `datos/` y el bot hace el resto.
 
 ---
 
-## 🔧 Tecnologías Utilizadas
+## Como Funciona la Automatizacion
 
-| Librería | Uso |
+Este sistema convierte al bot en un **vigilante automatico**. No necesitas correr el proceso cada vez que llega un reporte: el bot se queda "mirando" la carpeta y reacciona solo.
+
+### 1. La vigilancia (deteccion de archivos)
+
+Cuando el script arranca toma una **fotografia inicial** de los archivos que ya existen en `datos/` y los guarda en un conjunto (set) llamado `archivos_vistos`:
+
+```python
+archivos_vistos = set(os.listdir("datos/"))
+```
+
+Despues entra en un **bucle infinito** que, cada **5 segundos**, vuelve a listar la carpeta y compara el resultado con lo que ya habia visto:
+
+```python
+while True:
+    archivos_actuales = set(os.listdir("datos/"))
+    archivos_nuevos = archivos_actuales - archivos_vistos  # diferencia de conjuntos
+    if archivos_nuevos:
+        ...  # hay reportes nuevos, procesar
+    time.sleep(5)
+```
+
+- Se usa la **diferencia de conjuntos** (`-`): todo lo que este en `archivos_actuales` pero no en `archivos_vistos` es un **archivo nuevo**.
+- Si la diferencia no esta vacia, significa que **llego un reporte**.
+- El `time.sleep(5)` hace que el bot "descanse" 5 segundos entre revisiones, sin saturar la maquina.
+
+### 2. Que pasa cuando encuentra un archivo nuevo
+
+Al detectar un reporte, el bot llama a la funcion `procesar_todo(archivo_nuevo)`, que ejecuta el proceso completo:
+
+1. **Relee todos** los reportes CSV y Excel de la carpeta `datos/`.
+2. **Unifica los esquemas**: si aparece el archivo de Bogota (que usa nombres distintos como `Fecha_Venta`), lo renombra con un diccionario para que todas las tablas tengan las mismas columnas.
+3. **Consolida** todo en un unico DataFrame y **elimina duplicados** con `drop_duplicates()`.
+4. **Actualiza el Excel** `resultados/consolidado_limpio.xlsx` con todos los datos.
+5. **Genera los graficos** de ventas por categoria (barras) y participacion por vendedor (torta).
+6. **Escribe en el log** `resultados/log_automatizacion.txt` un registro con la fecha, el archivo detectado y el total de registros.
+
+### 3. El registro (log)
+
+Cada vez que detecta y procesa un archivo, deja una **huella** en `resultados/log_automatizacion.txt`:
+
+```
+Proceso ejecutado: 2026-08-31 14:30:15
+Archivo detectado: sucursal_medellin_reporte2.csv
+Total de registros procesados: 86
+---
+```
+
+Asi queda evidencia de **cada automatizacion** que se ejecuto.
+
+### Modelo mental
+
+```
+[Reporte llega a datos/]
+        │
+        ▼
+[Loop revisa cada 5s -> detecta archivo nuevo]
+        │
+        ▼
+[procesar_todo() lee + consolida + limpia]
+        │
+        ├──> actualiza consolidado_limpio.xlsx
+        ├──> actualiza grafico_categoria.png / grafico_vendedor.png
+        └──> escribe en log_automatizacion.txt
+```
+
+---
+
+## Uso (Automatizacion)
+
+```bash
+pip install -r requirements.txt
+python main.py
+```
+
+Al ejecutar el script, la consola muestra que el bot **queda vigilando** la carpeta de datos:
+
+```
+==================================================
+  BOT DE VENTAS - MODO AUTOMATIZADO
+==================================================
+Monitoreando carpeta 'datos/'... (Ctrl+C para detener)
+```
+
+Cuando se **agrega un archivo nuevo** a `datos/`, el bot lo detecta y lo procesa:
+
+```
+[+] Nuevo archivo detectado: sucursal_medellin_reporte2.csv
+  Registros consolidados: 86
+  Ventas totales: $7,XXX,XXX
+  Producto mas frecuente: Jean clasico
+  Archivos actualizados en resultados/
+```
+
+El bot **no se detiene**: continua vigilando por si llegan mas reportes. Para detenerlo usa `Ctrl+C`.
+
+---
+
+## Prueba Manual (demo)
+
+Para probar la automatizacion:
+
+1. Abre una terminal y ejecuta `python main.py`.
+2. Abre otra ventana con la carpeta `prueba/` del proyecto.
+3. **Arrastra** `sucursal_medellin_reporte2.csv` dentro de `datos/`.
+4. Observa la consola: aparecera el mensaje `[+] Nuevo archivo detectado: ...` y el proceso se ejecutara solo.
+5. Haz lo mismo con `sucursal_cali_reporte2.csv`.
+6. Verifica que `resultados/log_automatizacion.txt` registro ambos procesos, y que el consolidado y los graficos se actualizaron.
+
+---
+
+## Tecnologias Utilizadas
+
+| Libreria | Uso |
 |----------|-----|
-| **pandas** | Lectura, manipulación y consolidación de datos (DataFrames) |
-| **matplotlib** | Generación de gráficos de barras y torta |
-| **glob** | Búsqueda de archivos por patrón de nombre |
+| **pandas** | Lectura, manipulacion y consolidacion de datos (DataFrames) |
+| **matplotlib** | Generacion de graficos de barras y torta |
+| **glob** | Busqueda de archivos por patron de nombre |
 | **openpyxl** | Motor para leer/escribir archivos `.xlsx` |
 
 ### Requisitos
@@ -52,115 +162,92 @@ Este proyecto resuelve el problema típico de tener información de ventas **dis
 
 ---
 
-## ⚙️ Instalación
+## Instalacion
 
 ```bash
-# 1. Clonar el repositorio
 git clone https://github.com/josuealvarez21/Trabajo_db.git
 cd Trabajo_db/bot-ventas
-
-# 2. Instalar las dependencias
-pip install pandas matplotlib openpyxl
+pip install -r requirements.txt
 ```
 
 ---
 
-## ▶️ Uso
-
-```bash
-python main.py
-```
-
-Al ejecutar el script, la consola mostrará:
-
-```
-Archivos encontrados: ['datos/sucursal_medellin.csv', ...]
-Leído: datos/sucursal_medellin.csv - N filas
-Leído: datos/sucursal_cali.csv - N filas
-...
-```
-
-Los resultados se generan automáticamente en la carpeta `resultados/`.
-
----
-
-## 📊 Estructura de los Datos
+## Estructura de los Datos
 
 Tras la limpieza, todas las tablas comparten el mismo esquema:
 
-| Columna | Tipo | Descripción |
+| Columna | Tipo | Descripcion |
 |---------|------|-------------|
 | `fecha` | fecha | Fecha de la venta |
 | `producto` | texto | Nombre del producto vendido |
-| `cantidad` | numérico | Unidades vendidas |
-| `precio_unitario` | numérico | Valor unitario del producto |
+| `cantidad` | numerico | Unidades vendidas |
+| `precio_unitario` | numerico | Valor unitario del producto |
 | `vendedor` | texto | Vendedor responsable |
 | `metodo_pago` | texto | Medio de pago utilizado |
-| `categoria` | texto | Categoría del producto |
+| `categoria` | texto | Categoria del producto |
 
-> **Nota**: El archivo de **Bogotá** originalmente usaba nombres distintos (`Fecha_Venta`, `Producto`, `Categoria`, `Cant`, `Valor_Unitario`, `Vendedor`, `Pago`). El bot lo detecta mediante la columna única `Fecha_Venta` y renombra sus columnas con un diccionario antes de consolidar.
+> **Nota**: El archivo de **Bogota** originalmente usaba nombres distintos (`Fecha_Venta`, `Producto`, `Categoria`, `Cant`, `Valor_Unitario`, `Vendedor`, `Pago`). El bot lo detecta mediante la columna unica `Fecha_Venta` y renombra sus columnas con un diccionario antes de consolidar.
 
 ---
 
-## 📈 Análisis Realizados
+## Analisis Realizados
 
-1. **Ventas por categoría** → Gráfico de barras (`grafico_categoria.png`)
-2. **Participación por vendedor** → Gráfico de torta con porcentajes (`grafico_vendedor.png`)
-3. **Producto más vendido** → Frecuencia de aparición usando `value_counts()` sobre la columna `producto`
+1. **Ventas por categoria** -> Grafico de barras (`grafico_categoria.png`)
+2. **Participacion por vendedor** -> Grafico de torta con porcentajes (`grafico_vendedor.png`)
+3. **Producto mas vendido** -> Frecuencia de aparicion usando `value_counts()` sobre la columna `producto`
 
 ### Funciones clave de pandas utilizadas
 
-| Función | Propósito |
+| Funcion | Proposito |
 |---------|-----------|
 | `pd.read_csv()` | Leer archivos CSV |
 | `pd.read_excel()` | Leer archivos Excel |
 | `df.rename(columns={...})` | Renombrar columnas con un diccionario |
-| `pd.concat()` | Unir múltiples DataFrames en uno solo |
-| `df.groupby()` + `.sum()` | Agrupar ventas por categoría/vendedor y sumarlas |
-| `df['col'].value_counts()` | Contar frecuencia de valores únicos |
+| `pd.concat()` | Unir multiples DataFrames en uno solo |
+| `df.drop_duplicates()` | Eliminar registros duplicados |
+| `df.groupby()` + `.sum()` | Agrupar ventas por categoria/vendedor y sumarlas |
+| `df['col'].value_counts()` | Contar frecuencia de valores unicos |
 | `.idxmax()` | Obtener el valor con mayor frecuencia |
 | `df.to_excel()` | Exportar resultados a Excel |
 
 ---
 
-## 🖼️ Ejemplos de Resultados
+## Ejemplos de Resultados
 
-- **Gráfico de barras**: Compara el total de ventas ($) entre categorías de productos.
-- **Gráfico de torta**: Muestra qué porcentaje del total vendido aporta cada vendedor al equipo.
+- **Grafico de barras**: compara el total de ventas ($) entre categorias de productos.
+- **Grafico de torta**: muestra que porcentaje del total vendido aporta cada vendedor.
 
-### Ventas por categoría
+### Ventas por categoria
 
-![Ventas por Categoría](resultados/grafico_categoria.png)
+![Ventas por Categoria](resultados/grafico_categoria.png)
 
-### Participación de ventas por vendedor
+### Participacion de ventas por vendedor
 
-![Participación por Vendedor](resultados/grafico_vendedor.png)
+![Participacion por Vendedor](resultados/grafico_vendedor.png)
 
 ---
 
-## 📈 Resultados Obtenidos
+## Resultados Obtenidos (datos iniciales)
 
-Al ejecutar el bot sobre los datos de las 4 sucursales se obtienen los siguientes resultados reales:
+Al procesar los datos de las 4 sucursales se obtienen:
 
-### Resumen general
-
-| Métrica | Valor |
+| Metrica | Valor |
 |---------|-------|
-| Registros consolidados | **66 ventas** (Medellín 18 · Cali 17 · Barranquilla 16 · Bogotá 15) |
+| Registros consolidados | **66 ventas** (Medellin 18 · Cali 17 · Barranquilla 16 · Bogota 15) |
 | Ventas totales | **$6,037,900** |
 | Unidades vendidas | 294 |
-| Productos únicos | 10 |
+| Productos unicos | 10 |
 
-### Ventas por categoría
+### Ventas por categoria
 
-| Categoría | Ventas ($) | Participación |
+| Categoria | Ventas ($) | Participacion |
 |-----------|-----------:|--------------:|
-| Electrónica | $3,412,700 | 56.5% |
+| Electronica | $3,412,700 | 56.5% |
 | Ropa | $2,625,200 | 43.5% |
 
-### Participación por vendedor
+### Participacion por vendedor
 
-| Vendedor | Ventas ($) | Participación |
+| Vendedor | Ventas ($) | Participacion |
 |----------|-----------:|--------------:|
 | Camila Ruiz | $1,935,800 | 33.1% |
 | Andres Gomez | $1,361,700 | 23.3% |
@@ -168,9 +255,9 @@ Al ejecutar el bot sobre los datos de las 4 sucursales se obtienen los siguiente
 | Felipe Torres | $651,200 | 11.1% |
 | Laura Diaz | $580,200 | 9.9% |
 
-### Producto más vendido (`value_counts()`)
+### Producto mas vendido
 
-El producto que **más aparece** en las ventas es el **Jean clásico**, con **11 apariciones** en el consolidado:
+El producto que **mas aparece** en las ventas es el **Jean clasico**, con **11 apariciones**:
 
 | # | Producto | Apariciones |
 |---|----------|------------:|
@@ -180,14 +267,14 @@ El producto que **más aparece** en las ventas es el **Jean clásico**, con **11
 | 4 | Medias deportivas | 7 |
 | 5 | Audifonos Bluetooth | 6 |
 
-> 💡 **Hallazgo clave**: aunque Electrónica es la categoría que más dinero genera ($3.4M, 56.5%), el producto más frecuente pertenece a Ropa (Jean clasico), lo que sugiere que las prendas se venden en mayor volumen pero con precios unitarios más bajos.
+> **Hallazgo clave**: aunque Electronica es la categoria que mas dinero genera ($3.4M, 56.5%), el producto mas frecuente pertenece a Ropa (Jean clasico), lo que sugiere que las prendas se venden en mayor volumen pero con precios unitarios mas bajos.
 
 ---
 
-## 👨‍💻 Autor
+## Autor
 
-- **Josué Álvarez** — [GitHub](https://github.com/josuealvarez21)
+- **Josue Alvarez** - [GitHub](https://github.com/josuealvarez21)
 
-## 📄 Licencia
+## Licencia
 
-Proyecto educativo desarrollado para fines académicos.
+Proyecto educativo desarrollado para fines academicos.
