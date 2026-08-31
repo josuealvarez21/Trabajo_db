@@ -10,3 +10,21 @@ Total de registros procesados: 83
 Ventas totales: $7,820,500
 Producto mas vendido: Jean clasico
 ---
+Proceso ejecutado: 2026-08-31 13:39:57.437436
+Archivo detectado: sucursal_medellin_reporte2.csv
+Total de registros procesados: 83
+Ventas totales: $7,820,500
+Producto mas vendido: Jean clasico
+---
+Proceso ejecutado: 2026-08-31 13:41:35.073674
+Archivo detectado: sucursal_cali_reporte2 - sucursal_cali_reporte2.csv
+Total de registros procesados: 87
+Ventas totales: $8,095,500
+Producto mas vendido: Jean clasico
+---
+Proceso ejecutado: 2026-08-31 13:44:34.569299
+Archivo detectado: sucursal_cali_reporte2 - sucursal_cali_reporte2.csv
+Total de registros procesados: 87
+Ventas totales: $8,095,500
+Producto mas vendido: Jean clasico
+---
