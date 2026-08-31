@@ -9,8 +9,9 @@ import pandas as pd
 import glob
 import matplotlib.pyplot as plt
 
-CARPETA_DATOS = "datos"
-CARPETA_RESULTADOS = "resultados"
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+CARPETA_DATOS = os.path.join(BASE_DIR, "datos")
+CARPETA_RESULTADOS = os.path.join(BASE_DIR, "resultados")
 
 os.makedirs(CARPETA_RESULTADOS, exist_ok=True)
 
